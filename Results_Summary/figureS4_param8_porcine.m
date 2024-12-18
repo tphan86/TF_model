@@ -1,0 +1,149 @@
+%% Resolution Matrix for ktr vs pCa in porcine LV - parameter set 8
+
+close all
+clc
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Mechanical data from porcine LV
+pCa_porcine_LV = [6.1; 6.0; 5.9; 5.8; 5.7; 5.6; 5.5; 5.4; 4.5];
+ktr_mean_porcine_LV = [2.43; 1.79; 1.47; 1.09; 1.21; 1.67; 2.22; 2.51; 3.32];
+ktr_SEM_porcine_LV = [0.15; 0.15; 0.14; 0.11; 0.09; 0.09; 0.11; 0.11; 0.17];
+
+%%%%%%%%%%%%
+% Error function - the norm of the difference between actual observations
+% (data) and predicted observations (the solution of the model)
+ftns_1 = @(para_fit) norm(ktr_mean_porcine_LV - rate_force_redev_8(para_fit,pCa_porcine_LV));
+Parms_1 = 20; % the number of fitting parameters
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% initial values of the parameters to be fitted
+pCa_50 = 5.65;
+k0_BC = 24.35112;
+kCa_BC = 243.53604;
+k0_CB = 1592.75304;
+kCa_CB = 117.51833;
+f0_CM1 = 90.99207;
+f0_M1C = 691.79199;
+k_M1M2 = 2.67635;
+k_M2M1 = 2.55643;
+k_M2C = 0.69478;
+alpha = 1;
+alpha_bar = 0.83950;
+beta = 1;
+beta_bar = 1;
+u1 = 1.10367;
+u2 = 17.08321;
+z1 = 1.00074;
+z2 = 1.00000;
+v = 1.03745;
+w = 1.00000;
+para_fit_1= [pCa_50;k0_BC;kCa_BC;k0_CB;kCa_CB;f0_CM1;f0_M1C;k_M1M2;k_M2M1;k_M2C;...
+             alpha;alpha_bar;beta;beta_bar;u1;u2;z1;z2;v;w];
+lower_bound_1 = [5.63 % pCa_50
+                 0    % k0_BC
+                 0    % kCa_BC
+                 0    % k0_CB
+                 0    % kCa_CB
+                 0    % f0_CM1
+                 0    % f0_M1C
+                 0    % k_M1M2
+                 0    % k_M2M1
+                 0    % k_M2C
+                 0    % alpha
+                 0    % alpha_bar
+                 0    % beta
+                 0    % beta_bar
+                 1    % u1
+                 1    % u2
+                 1    % z1
+                 1    % z2
+                 1    % v
+                 1    % w
+                 ];
+upper_bound_1 = [5.67 % pCa_50
+                 Inf    % k0_BC
+                 Inf    % kCa_BC
+                 Inf    % k0_CB
+                 Inf    % kCa_CB
+                 Inf    % f0_CM1
+                 Inf    % f0_M1C
+                 Inf    % k_M1M2
+                 Inf    % k_M2M1
+                 Inf    % k_M2C
+                 1    % alpha
+                 1    % alpha_bar
+                 1    % beta
+                 1    % beta_bar
+                 Inf    % u1
+                 Inf   % u2
+                 Inf    % z1
+                 Inf    % z2
+                 Inf    % v
+                 Inf    % w
+                 ];
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+opts = optimoptions('lsqcurvefit','Algorithm','levenberg-marquardt');
+
+% Fit the model to the mechanical data from porcine LV
+[fitted_para_1,resnorm_1,residual_1,exitflag_1,output_1,lambda_1,jacobian_1] = lsqcurvefit( ...
+    @rate_force_redev_8,para_fit_1,pCa_porcine_LV,ktr_mean_porcine_LV,lower_bound_1,...
+    upper_bound_1,opts);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Print out values of the new fitted parameters
+fprintf('fitted parameters for porcine LV data:\n')
+fprintf('pCa50 = %f \n',fitted_para_1(1))
+fprintf('k0_BC = %f, kCa_BC = %f, k0_CB = %f, kCa_CB = %f \n', fitted_para_1(2:5))
+fprintf('f0_CM1 = %f, f0_M1C = %f \n', fitted_para_1(6:7))
+fprintf('k_M1M2 = %f, k_M2M1 = %f, k_M2C = %f \n', fitted_para_1(8:10))
+fprintf('alpha = %f, alpha_bar = %f, beta = %f, beta_bar = %f \n', fitted_para_1(11:14))
+fprintf('u1 = %f, u2 = %f \n', fitted_para_1(15:16))
+fprintf('z1 = %f, z2 = %f \n', fitted_para_1(17:18))
+fprintf('v = %f, w = %f \n', fitted_para_1(19:20))
+fprintf('RMSE = %f', sqrt(resnorm_1))
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % Compute the data resolution matrix
+% jacobian_inv = pinv(jacobian_1);
+% data_resolution_matrix_1 = jacobian_1 * jacobian_inv;
+% 
+% % Plot the data resolution matrix as a heatmap
+% figure;
+% imagesc(data_resolution_matrix_1);
+% colorbar;
+% title({['Data Resolution Matrix'] 
+%        ['ktr vs pCa in porcine LV']
+%        ['Parameter set 8']});
+% xlabel('Data Points');
+% ylabel('Data Points');
+% xticks(1:9);
+% yticks(1:9);
+% axis square;
+% set(gca, 'FontSize', 14);
+% 
+% % Save the heatmap as a JPEG file
+% saveas(gcf, 'data_res_matrix_ktr_porcine_8.jpg');
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Compute the model resolution matrix
+model_resolution_matrix_1 = pinv(jacobian_1) * jacobian_1;
+
+% Plot the model resolution matrix as a heatmap
+figure;
+model_res_matrix_1_resized = imresize(model_resolution_matrix_1, [20, 20]);
+imagesc(model_res_matrix_1_resized);
+axis equal
+axis tight
+colorbar;
+title({['Model Resolution Matrix'] 
+       ['ktr vs pCa in porcine LV']
+       ['Parameter set 8']});
+xlabel('Parameters');
+ylabel('Parameters');
+xticks(1:20);
+yticks(1:20);
+axis square;
+set(gca, 'FontSize', 14);
+
+% % Save the heatmap as a JPEG file
+% saveas(gcf, 'model_res_matrix_ktr_porcine_8.jpg');
