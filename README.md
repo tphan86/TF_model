@@ -1,1 +1,1 @@
-# TF_model
+# Four-state thin filament model
